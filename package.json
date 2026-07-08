@@ -1,0 +1,20 @@
+{
+  "name": "goRest-api-newman",
+  "version": "1.0.0",
+  "description": "API testing framework for GoREST using Postman and Newman",
+  "main": "index.js",
+  "scripts": {
+    "newman": "newman run collection/goREST.postman_collection.json -e environment/qa.postman_environment.json",
+    "report": "newman run collection/goREST.postman_collection.json -e environment/qa.postman_environment.json -r cli,htmlextra --reporter-htmlextra-export ./reports/index.html",
+    "clean": "rimraf reports"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "newman": "^6.2.2",
+    "newman-reporter-htmlextra": "^1.23.1",
+    "rimraf": "^6.1.3"
+  }
+}
