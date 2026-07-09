@@ -18,7 +18,7 @@ API automation project for the GoREST public REST API.
 The collection validates the complete User CRUD workflow:
 
 - Create User
-- Get All Users with pagination and filtering
+- Get All Users
 - Get User by ID
 - Update User
 - Partial Update User
@@ -38,7 +38,6 @@ The project validates:
 - Content-Type header
 - JSON schema
 - CRUD data consistency
-- Runtime-generated test data
 - Pagination
 - Filtering
 - Negative API responses
@@ -74,7 +73,7 @@ GitHub Actions automatically:
 ---
 
 ## Getting started
-### Installation
+### Install
 ```
 npm install
 ```

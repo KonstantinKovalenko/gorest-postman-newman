@@ -9,7 +9,7 @@
     "clean": "rimraf reports"
   },
   "keywords": [],
-  "author": "",
+  "author": "Konstantin Kovalenko",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
