@@ -1,78 +1,132 @@
-# GoREST API Testing with Postman & Newman
+# GoREST API Testing Framework
 
-API automation project built with Postman and Newman using the GoREST public API.
+API automation project for the GoREST public REST API.
 
-## Tech Stack
+✔ Postman Collection with reusable collection scripts  
+✔ CRUD API testing with dynamic runtime data  
+✔ JSON Schema validation and business logic assertions  
+✔ Newman HTML reporting  
+✔ CI/CD with GitHub Actions  
+✔ Automatic report publishing to GitHub Pages  
 
-* Postman
-* Newman
-* Newman HTML Extra Reporter
-* Node.js
-* GitHub Actions
+[![GitHub Pages](https://img.shields.io/badge/View-Latest_Report-blue?logo=github)](https://konstantinkovalenko.github.io/gorest-postman-newman/)
+
+---
+
+## Test Coverage
+
+The collection validates the complete User CRUD workflow:
+
+- Create User
+- Get All Users with pagination and filtering
+- Get User by ID
+- Update User
+- Partial Update User
+- Delete User
+- Negative Get User by ID (404)
+
+---
+
+## Automated Validations
+
+Common assertions are centralized at the collection level where possible.
+
+The project validates:
+
+- HTTP status codes
+- Response time
+- Content-Type header
+- JSON schema
+- CRUD data consistency
+- Runtime-generated test data
+- Pagination
+- Filtering
+- Negative API responses
+
+---
+
+## CI/CD
+
+GitHub Actions automatically:
+
+- Installs project dependencies
+- Executes the Newman collection
+- Generates an HTML report
+- Uploads the HTML report as a workflow artifact
+- Publishes the latest report to GitHub Pages
+
+---
 
 ## Project Structure
 
 ```
-collection/
-environment/
-reports/
-package.json
-README.md
+├── collections/  
+│   └── goREST.postman_collection.json   
+├── environments/  
+│   └── qa.postman_environment.json  
+├── reports/  
+├── .github/  
+│   └── workflows/  
+├── package.json  
+└── README.md  
 ```
 
-## Prerequisites
+---
 
-* Node.js 18+
-* npm
-
-## Installation
-
-```bash
+## Getting started
+### Installation
+```
 npm install
 ```
+### Run Tests
 
-## Run Tests
-
-Execute the Postman collection:
-
-```bash
+#### Execute the collection:
+```
 npm run newman
 ```
-
-Generate an HTML report:
-
-```bash
+#### Execute the collection and generate an HTML report:
+```
 npm run report
 ```
-
-Remove generated reports:
-
-```bash
+#### Remove generated reports:
+```
 npm run clean
 ```
 
-## Test Coverage
+---
 
-The collection includes automated tests for:
+## Environment Management
 
-* Create User
-* Get User by ID
-* Update User
-* Partial Update User
-* Delete User
-* Negative Get User by ID
-* Get All Users with pagination and filtering
+The project separates configuration and runtime data using environment variables.
 
-Validation includes:
+### Configuration Variables
+- cfg_baseURL
+- cfg_token
+- cfg_maxResponseTime
+- cfg_page
+- cfg_perPage
+- cfg_status
 
-* Status codes
-* Response time
-* JSON schema validation
-* Business logic validation
-* Pagination
-* Filtering
-* Content-Type validation
+### Runtime Variables
 
-## CI/CD
+Runtime variables are generated automatically during execution to keep test runs independent and avoid hardcoded data.
 
-The collection is executed automatically using GitHub Actions, and the HTML report is published to GitHub Pages.
+Examples include:
+
+- runtime_userId
+- runtime_userName
+- runtime_userEmail
+- runtime_expectedStatusCode
+
+All runtime variables are removed automatically after the collection finishes.
+
+---
+
+## Author
+
+Konstantin Kovalenko
+
+* GitHub: https://github.com/KonstantinKovalenko  
+* LinkedIn: [www.linkedin.com/in/kostyantyn-kovalenko/](https://www.linkedin.com/in/kostyantyn-kovalenko/)
+* Email: chvyaka.kk@gmail.com
+* Telegram: @kovakost

@@ -1,6 +1,6 @@
 {
   "name": "goRest-api-newman",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "API testing framework for GoREST using Postman and Newman",
   "main": "index.js",
   "scripts": {
