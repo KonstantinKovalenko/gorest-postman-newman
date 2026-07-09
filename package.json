@@ -4,8 +4,8 @@
   "description": "API testing framework for GoREST using Postman and Newman",
   "main": "index.js",
   "scripts": {
-    "newman": "newman run collection/goREST.postman_collection.json -e environment/qa.postman_environment.json",
-    "report": "newman run collection/goREST.postman_collection.json -e environment/qa.postman_environment.json -r cli,htmlextra --reporter-htmlextra-export ./reports/index.html",
+    "newman": "newman run collections/goREST.postman_collection.json -e environments/qa.postman_environment.json",
+    "report": "newman run collections/goREST.postman_collection.json -e environments/qa.postman_environment.json -r cli,htmlextra --reporter-htmlextra-export ./reports/index.html",
     "clean": "rimraf reports"
   },
   "keywords": [],
