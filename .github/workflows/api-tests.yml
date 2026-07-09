@@ -20,9 +20,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: |
-          npm install -g newman
-          npm install -g newman-reporter-htmlextra
+        run: npm ci
 
       - name: Run Newman tests and generate report
         run: npm run report
