@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   api-tests:
     runs-on: ubuntu-latest
@@ -32,3 +35,10 @@ jobs:
           name: newman-report-${{ github.run_number }}
           path: reports
           if-no-files-found: ignore
+
+      - name: Deploy report to GitHub Pages
+        if: success()
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./reports
