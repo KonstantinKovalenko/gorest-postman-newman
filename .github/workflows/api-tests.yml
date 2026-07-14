@@ -30,7 +30,7 @@ jobs:
         run: npm ci
 
       - name: Run Newman tests
-        run: npm run ci:report
+        run: npm run report -- --env-var "cfg_token=${{ secrets.GOREST_TOKEN }}"
 
       - name: Upload HTML report
         if: always()
