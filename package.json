@@ -6,7 +6,7 @@
   "scripts": {
     "newman": "newman run collections/goREST.postman_collection.json -e environments/qa.postman_environment.json",
     "report": "newman run collections/goREST.postman_collection.json -e environments/qa.postman_environment.json -r cli,htmlextra --reporter-htmlextra-export ./reports/index.html",
-    "ci:report": "newman run collections/goREST.postman_collection.json -e environments/qa.postman_environment.json --env-var 'cfg_token=${{ secrets.GOREST_TOKEN }}' -r cli,htmlextra --reporter-htmlextra-export ./reports/index.html",
+    "ci:report": "newman run collections/goREST.postman_collection.json -e environments/qa.postman_environment.json --env-var cfg_token=${{ secrets.GOREST_TOKEN }} -r cli,htmlextra --reporter-htmlextra-export ./reports/index.html",
     "clean": "rimraf reports"
   },
   "keywords": [],
