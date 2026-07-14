@@ -23,19 +23,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run Newman tests
         run: |
-          newman run collections/goREST.postman_collection.json \
-          -e environments/qa.postman_environment.json \
-          --env-var "cfg_token=${{ secrets.GOREST_TOKEN }}" \
-          -r cli,htmlextra \
-          --reporter-htmlextra-export ./reports/index.html
+          newman run collections/goREST.postman_collection.json -e environments/qa.postman_environment.json --env-var "cfg_token=${{ secrets.GOREST_TOKEN }}" -r cli,htmlextra --reporter-htmlextra-export ./reports/index.html
 
       - name: Upload HTML report
         if: always()
