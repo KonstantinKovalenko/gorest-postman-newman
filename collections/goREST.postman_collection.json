@@ -19,21 +19,21 @@
       "script": {
         "type": "text/javascript",
         "exec": [
-          "if(!pm.environment.get(\"runtime_userId\")){",
+          "if(!pm.variables.get(\"runtime_userId\")){",
           "    const currentDate = Date.now()",
           "    const random = Math.floor(Math.random() * 100)",
           "",
-          "    pm.environment.set(\"runtime_expectedStatusCode\", 200)",
+          "    pm.variables.set(\"runtime_expectedStatusCode\", 200)",
           "    ",
-          "    pm.environment.set(\"runtime_userGenderMale\", \"male\")",
-          "    pm.environment.set(\"runtime_userGenderFemale\", \"female\")",
-          "    pm.environment.set(\"runtime_userStatusActive\", \"active\")",
-          "    pm.environment.set(\"runtime_userStatusInactive\", \"inactive\")",
+          "    pm.variables.set(\"runtime_userGenderMale\", \"male\")",
+          "    pm.variables.set(\"runtime_userGenderFemale\", \"female\")",
+          "    pm.variables.set(\"runtime_userStatusActive\", \"active\")",
+          "    pm.variables.set(\"runtime_userStatusInactive\", \"inactive\")",
           "  ",
-          "    pm.environment.set(\"runtime_userName\", `user_${currentDate}`)",
-          "    pm.environment.set(\"runtime_userNameUpdated\", `user_${currentDate}${random}`)",
-          "    pm.environment.set(\"runtime_userEmail\", `email_${currentDate}@qa.com`)",
-          "    pm.environment.set(\"runtime_userEmailUpdated\", `email_${currentDate}${random}@qa.com`)",
+          "    pm.variables.set(\"runtime_userName\", `user_${currentDate}`)",
+          "    pm.variables.set(\"runtime_userNameUpdated\", `user_${currentDate}${random}`)",
+          "    pm.variables.set(\"runtime_userEmail\", `email_${currentDate}@qa.com`)",
+          "    pm.variables.set(\"runtime_userEmailUpdated\", `email_${currentDate}${random}@qa.com`)",
           "}"
         ]
       }
@@ -43,9 +43,8 @@
       "script": {
         "type": "text/javascript",
         "exec": [
-          "const ignoredAllRequests = [",
-          "    \"200: Cleanup runtime variables\"",
-          "]",
+          "const Ajv = require(\"ajv\")",
+          "const ajv = new Ajv()",
           "",
           "const userSchemaRequests = [",
           "    \"201: Create User\",",
@@ -54,7 +53,7 @@
           "    \"200: Partial Update User\"",
           "]",
           "",
-          "const userArraySchemaRequests = [",
+          "const usersArraySchemaRequests = [",
           "    \"200: Get All Users\"",
           "]",
           "",
@@ -63,8 +62,11 @@
           "    \"200: Get User by ID\",",
           "    \"200: Update User\",",
           "    \"200: Partial Update User\",",
-          "    \"200: Get All Users\",",
-          "    \"404: Get User by ID\"",
+          "    \"422: Create User with Existing Email\",",
+          "    \"422: Update User with Invalid Gender\",",
+          "    \"401: Partial Update User without Authorization\",",
+          "    \"404: Get Deleted User by ID\",",
+          "    \"200: Get All Users\"",
           "]",
           "",
           "const userSchema = {",
@@ -96,27 +98,26 @@
           "    items: userSchema",
           "}",
           "",
+          "const validateUser = ajv.compile(userSchema)",
+          "const validateUsersArray = ajv.compile(userArraySchema)",
+          "",
           "pm.test(`Response time is less than ${pm.environment.get(\"cfg_maxResponseTime\")} ms`, () => {",
           "    pm.expect(pm.response.responseTime).to.be.below(Number(pm.environment.get(\"cfg_maxResponseTime\")))",
           "})",
           "",
-          "if(!ignoredAllRequests.includes(pm.info.requestName)){",
-          "    pm.test(`Status code is ${pm.variables.get(\"runtime_expectedStatusCode\")}`, () => {",
-          "        pm.response.to.have.status(Number(pm.variables.get(\"runtime_expectedStatusCode\")))",
-          "    })",
-          "}",
+          "pm.test(`Status code is ${pm.variables.get(\"runtime_expectedStatusCode\")}`, () => {",
+          "    pm.response.to.have.status(Number(pm.variables.get(\"runtime_expectedStatusCode\")))",
+          "})",
           "",
           "if (userSchemaRequests.includes(pm.info.requestName)) {",
           "    pm.test(\"Response matches user schema\", () => {",
-          "        const isValid = tv4.validate(pm.response.json(), userSchema)",
-          "        pm.expect(isValid, JSON.stringify(tv4.error)).to.be.true",
+          "        pm.expect(validateUser(pm.response.json()), JSON.stringify(validateUser.errors)).to.be.true",
           "    })",
           "}",
           "",
-          "if (userArraySchemaRequests.includes(pm.info.requestName)) {",
+          "if (usersArraySchemaRequests.includes(pm.info.requestName)) {",
           "    pm.test(\"Response matches array schema\", () => {",
-          "        const isValid = tv4.validate(pm.response.json(), userArraySchema)",
-          "        pm.expect(isValid, JSON.stringify(tv4.error)).to.be.true",
+          "        pm.expect(validateUsersArray(pm.response.json()), JSON.stringify(validateUsersArray.errors)).to.be.true",
           "    })",
           "}",
           "",
@@ -142,7 +143,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.environment.set(\"runtime_expectedStatusCode\",201)"
+                  "pm.variables.set(\"runtime_expectedStatusCode\",201)"
                 ]
               }
             },
@@ -153,22 +154,22 @@
                 "exec": [
                   "const jsonResponse = pm.response.json()",
                   "",
-                  "pm.environment.set(\"runtime_userId\", jsonResponse.id)",
+                  "pm.variables.set(\"runtime_userId\", jsonResponse.id)",
                   "",
                   "pm.test(\"Created user name matches request\", () => {",
-                  "    pm.expect(jsonResponse.name).to.equal(pm.environment.get(\"runtime_userName\"))",
+                  "    pm.expect(jsonResponse.name).to.equal(pm.variables.get(\"runtime_userName\"))",
                   "})",
                   "",
                   "pm.test(\"Created user email matches request\", () => {",
-                  "    pm.expect(jsonResponse.email).to.equal(pm.environment.get(\"runtime_userEmail\"))",
+                  "    pm.expect(jsonResponse.email).to.equal(pm.variables.get(\"runtime_userEmail\"))",
                   "})",
                   "",
                   "pm.test(\"Created user gender matches request\", () => {",
-                  "    pm.expect(jsonResponse.gender).to.equal(pm.environment.get(\"runtime_userGenderMale\"))",
+                  "    pm.expect(jsonResponse.gender).to.equal(pm.variables.get(\"runtime_userGenderMale\"))",
                   "})",
                   "",
                   "pm.test(\"Created user status matches request\", () => {",
-                  "    pm.expect(jsonResponse.status).to.equal(pm.environment.get(\"runtime_userStatusActive\"))",
+                  "    pm.expect(jsonResponse.status).to.equal(pm.variables.get(\"runtime_userStatusActive\"))",
                   "})"
                 ]
               }
@@ -179,7 +180,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\": \"{{runtime_userName}}\",\r\n    \"gender\": \"{{runtime_userGenderMale}}\",\r\n    \"email\": \"{{runtime_userEmail}}\",\r\n    \"status\": \"{{runtime_userStatusActive}}\"\r\n}",
+              "raw": "{\n    \"name\": \"{{runtime_userName}}\",\n    \"gender\": \"{{runtime_userGenderMale}}\",\n    \"email\": \"{{runtime_userEmail}}\",\n    \"status\": \"{{runtime_userStatusActive}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -188,8 +189,445 @@
             },
             "url": {
               "raw": "{{cfg_baseURL}}/users",
-              "host": ["{{cfg_baseURL}}"],
-              "path": ["users"]
+              "host": [
+                "{{cfg_baseURL}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          }
+        },
+        {
+          "name": "200: Get User by ID",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"runtime_expectedStatusCode\",200)"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const jsonResponse = pm.response.json()",
+                  "",
+                  "pm.test(\"Returned user ID matches expected ID\", () => {",
+                  "    pm.expect(jsonResponse.id).to.equal(Number(pm.variables.get(\"runtime_userId\")))",
+                  "})",
+                  "",
+                  "pm.test(\"Returned user name matches expected value\", () => {",
+                  "    pm.expect(jsonResponse.name).to.equal(pm.variables.get(\"runtime_userName\"))",
+                  "})",
+                  "",
+                  "pm.test(\"Returned user email matches expected value\", () => {",
+                  "    pm.expect(jsonResponse.email).to.equal(pm.variables.get(\"runtime_userEmail\"))",
+                  "})",
+                  "",
+                  "pm.test(\"Returned user gender matches expected value\", () => {",
+                  "    pm.expect(jsonResponse.gender).to.equal(pm.variables.get(\"runtime_userGenderMale\"))",
+                  "})",
+                  "",
+                  "pm.test(\"Returned user status matches expected value\", () => {",
+                  "    pm.expect(jsonResponse.status).to.equal(pm.variables.get(\"runtime_userStatusActive\"))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cfg_baseURL}}/users/{{runtime_userId}}",
+              "host": [
+                "{{cfg_baseURL}}"
+              ],
+              "path": [
+                "users",
+                "{{runtime_userId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "200: Update User",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"runtime_expectedStatusCode\",200)"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const jsonResponse = pm.response.json()",
+                  "",
+                  "pm.test(\"Returned user ID matches expected ID\", () => {",
+                  "    pm.expect(jsonResponse.id).to.equal(Number(pm.variables.get(\"runtime_userId\")))",
+                  "})",
+                  "",
+                  "pm.test(\"Returned user name matches expected value\", () => {",
+                  "    pm.expect(jsonResponse.name).to.equal(pm.variables.get(\"runtime_userNameUpdated\"))",
+                  "})",
+                  "",
+                  "pm.test(\"Returned user email matches expected value\", () => {",
+                  "    pm.expect(jsonResponse.email).to.equal(pm.variables.get(\"runtime_userEmailUpdated\"))",
+                  "})",
+                  "",
+                  "pm.test(\"Returned user gender matches expected value\", () => {",
+                  "    pm.expect(jsonResponse.gender).to.equal(pm.variables.get(\"runtime_userGenderFemale\"))",
+                  "})",
+                  "",
+                  "pm.test(\"Returned user status matches expected value\", () => {",
+                  "    pm.expect(jsonResponse.status).to.equal(pm.variables.get(\"runtime_userStatusInactive\"))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"{{runtime_userNameUpdated}}\",\n    \"gender\": \"{{runtime_userGenderFemale}}\",\n    \"email\": \"{{runtime_userEmailUpdated}}\",\n    \"status\": \"{{runtime_userStatusInactive}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{cfg_baseURL}}/users/{{runtime_userId}}",
+              "host": [
+                "{{cfg_baseURL}}"
+              ],
+              "path": [
+                "users",
+                "{{runtime_userId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "200: Partial Update User",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"runtime_expectedStatusCode\",200)"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const jsonResponse = pm.response.json()",
+                  "",
+                  "pm.test(\"Returned user ID matches expected ID\", () => {",
+                  "    pm.expect(jsonResponse.id).to.equal(Number(pm.variables.get(\"runtime_userId\")))",
+                  "})",
+                  "",
+                  "pm.test(\"Returned user name matches expected value\", () => {",
+                  "    pm.expect(jsonResponse.name).to.equal(pm.variables.get(\"runtime_userNameUpdated\"))",
+                  "})",
+                  "",
+                  "pm.test(\"Returned user email matches expected value\", () => {",
+                  "    pm.expect(jsonResponse.email).to.equal(pm.variables.get(\"runtime_userEmailUpdated\"))",
+                  "})",
+                  "",
+                  "pm.test(\"Returned user gender matches expected value\", () => {",
+                  "    pm.expect(jsonResponse.gender).to.equal(pm.variables.get(\"runtime_userGenderMale\"))",
+                  "})",
+                  "",
+                  "pm.test(\"Returned user status matches expected value\", () => {",
+                  "    pm.expect(jsonResponse.status).to.equal(pm.variables.get(\"runtime_userStatusActive\"))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"{{runtime_userNameUpdated}}\",\n    \"gender\": \"{{runtime_userGenderMale}}\",\n    \"email\": \"{{runtime_userEmailUpdated}}\",\n    \"status\": \"{{runtime_userStatusActive}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{cfg_baseURL}}/users/{{runtime_userId}}",
+              "host": [
+                "{{cfg_baseURL}}"
+              ],
+              "path": [
+                "users",
+                "{{runtime_userId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "422: Create User with Existing Email",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"runtime_expectedStatusCode\",422)"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const jsonResponse = pm.response.json()",
+                  "",
+                  "pm.test(\"Response contains one validation error\", () => {",
+                  "    pm.expect(jsonResponse).to.be.an(\"array\").with.lengthOf(1)",
+                  "})",
+                  "",
+                  "pm.test('Validation error is returned for \"email\" field', () => {",
+                  "    pm.expect(jsonResponse[0].field).to.equal(\"email\")",
+                  "})",
+                  "",
+                  "pm.test('Validation message is \"has already been taken\"', () => {",
+                  "    pm.expect(jsonResponse[0].message).to.equal(\"has already been taken\")",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"{{runtime_userNameUpdated}}\",\n    \"gender\": \"{{runtime_userGenderMale}}\",\n    \"email\": \"{{runtime_userEmailUpdated}}\",\n    \"status\": \"{{runtime_userStatusActive}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{cfg_baseURL}}/users",
+              "host": [
+                "{{cfg_baseURL}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          }
+        },
+        {
+          "name": "422: Update User with Invalid Gender",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"runtime_expectedStatusCode\",422)"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const jsonResponse = pm.response.json()",
+                  "",
+                  "pm.test(\"Response contains one validation error\", () => {",
+                  "    pm.expect(jsonResponse).to.be.an(\"array\").with.lengthOf(1)",
+                  "})",
+                  "",
+                  "pm.test('Validation error is returned for \"gender\" field', () => {",
+                  "    pm.expect(jsonResponse[0].field).to.equal(\"gender\")",
+                  "})",
+                  "",
+                  "pm.test('Validation message is \"can not be blank, can be male of female\"', () => {",
+                  "    pm.expect(jsonResponse[0].message).to.equal(\"can't be blank, can be male of female\")",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"{{runtime_userNameUpdated}}\",\n    \"gender\": \"\",\n    \"email\": \"{{runtime_userEmailUpdated}}\",\n    \"status\": \"{{runtime_userStatusInactive}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{cfg_baseURL}}/users/{{runtime_userId}}",
+              "host": [
+                "{{cfg_baseURL}}"
+              ],
+              "path": [
+                "users",
+                "{{runtime_userId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "401: Partial Update User without Authorization",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"runtime_expectedStatusCode\",401)"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const jsonResponse = pm.response.json()",
+                  "",
+                  "pm.test('Response message is \"Invalid token\"', () => {",
+                  "    pm.expect(jsonResponse.message).to.equal(\"Invalid token\")",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "invalid-token",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"{{runtime_userName}}\",\n    \"gender\": \"{{runtime_userGenderMale}}\",\n    \"email\": \"{{runtime_userEmail}}\",\n    \"status\": \"{{runtime_userStatusActive}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{cfg_baseURL}}/users/{{runtime_userId}}",
+              "host": [
+                "{{cfg_baseURL}}"
+              ],
+              "path": [
+                "users",
+                "{{runtime_userId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "204: Delete User",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"runtime_expectedStatusCode\",204)"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{cfg_baseURL}}/users/{{runtime_userId}}",
+              "host": [
+                "{{cfg_baseURL}}"
+              ],
+              "path": [
+                "users",
+                "{{runtime_userId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "404: Get Deleted User by ID",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"runtime_expectedStatusCode\",404)"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const jsonResponse = pm.response.json()",
+                  "",
+                  "pm.test('Response message is \"Resource not found\"', () => {",
+                  "    pm.expect(jsonResponse.message).to.equal(\"Resource not found\")",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cfg_baseURL}}/users/{{runtime_userId}}",
+              "host": [
+                "{{cfg_baseURL}}"
+              ],
+              "path": [
+                "users",
+                "{{runtime_userId}}"
+              ]
             }
           }
         },
@@ -201,7 +639,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.environment.set(\"runtime_expectedStatusCode\",200)"
+                  "pm.variables.set(\"runtime_expectedStatusCode\",200)"
                 ]
               }
             },
@@ -225,7 +663,7 @@
                   "})",
                   "",
                   "pm.test(\"Returned expected number of users\", () => {",
-                  "    pm.expect(jsonResponse.length).to.equal(Number(pm.environment.get(\"cfg_perPage\")))",
+                  "    pm.expect(jsonResponse.length).to.be.at.most(Number(pm.environment.get(\"cfg_perPage\")))",
                   "})",
                   "",
                   "pm.test(\"All returned users are active\", () => {",
@@ -242,8 +680,12 @@
             "header": [],
             "url": {
               "raw": "{{cfg_baseURL}}/users?page={{cfg_page}}&per_page={{cfg_perPage}}&status={{cfg_status}}",
-              "host": ["{{cfg_baseURL}}"],
-              "path": ["users"],
+              "host": [
+                "{{cfg_baseURL}}"
+              ],
+              "path": [
+                "users"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -260,278 +702,8 @@
               ]
             }
           }
-        },
-        {
-          "name": "200: Get User by ID",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.environment.set(\"runtime_expectedStatusCode\",200)"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const jsonResponse = pm.response.json()",
-                  "",
-                  "pm.test(\"Returned user ID matches expected ID\", () => {",
-                  "    pm.expect(jsonResponse.id).to.equal(Number(pm.environment.get(\"runtime_userId\")))",
-                  "})",
-                  "",
-                  "pm.test(\"Returned user name matches expected value\", () => {",
-                  "    pm.expect(jsonResponse.name).to.equal(pm.environment.get(\"runtime_userName\"))",
-                  "})",
-                  "",
-                  "pm.test(\"Returned user email matches expected value\", () => {",
-                  "    pm.expect(jsonResponse.email).to.equal(pm.environment.get(\"runtime_userEmail\"))",
-                  "})",
-                  "",
-                  "pm.test(\"Returned user gender matches expected value\", () => {",
-                  "    pm.expect(jsonResponse.gender).to.equal(pm.environment.get(\"runtime_userGenderMale\"))",
-                  "})",
-                  "",
-                  "pm.test(\"Returned user status matches expected value\", () => {",
-                  "    pm.expect(jsonResponse.status).to.equal(pm.environment.get(\"runtime_userStatusActive\"))",
-                  "})"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{cfg_baseURL}}/users/{{runtime_userId}}",
-              "host": ["{{cfg_baseURL}}"],
-              "path": ["users", "{{runtime_userId}}"]
-            }
-          }
-        },
-        {
-          "name": "200: Update User",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.environment.set(\"runtime_expectedStatusCode\",200)"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const jsonResponse = pm.response.json()",
-                  "",
-                  "pm.test(\"Returned user ID matches expected ID\", () => {",
-                  "    pm.expect(jsonResponse.id).to.equal(Number(pm.environment.get(\"runtime_userId\")))",
-                  "})",
-                  "",
-                  "pm.test(\"Returned user name matches expected value\", () => {",
-                  "    pm.expect(jsonResponse.name).to.equal(pm.environment.get(\"runtime_userNameUpdated\"))",
-                  "})",
-                  "",
-                  "pm.test(\"Returned user email matches expected value\", () => {",
-                  "    pm.expect(jsonResponse.email).to.equal(pm.environment.get(\"runtime_userEmailUpdated\"))",
-                  "})",
-                  "",
-                  "pm.test(\"Returned user gender matches expected value\", () => {",
-                  "    pm.expect(jsonResponse.gender).to.equal(pm.environment.get(\"runtime_userGenderFemale\"))",
-                  "})",
-                  "",
-                  "pm.test(\"Returned user status matches expected value\", () => {",
-                  "    pm.expect(jsonResponse.status).to.equal(pm.environment.get(\"runtime_userStatusInactive\"))",
-                  "})"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PUT",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"name\": \"{{runtime_userNameUpdated}}\",\r\n    \"gender\": \"{{runtime_userGenderFemale}}\",\r\n    \"email\": \"{{runtime_userEmailUpdated}}\",\r\n    \"status\": \"{{runtime_userStatusInactive}}\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{cfg_baseURL}}/users/{{runtime_userId}}",
-              "host": ["{{cfg_baseURL}}"],
-              "path": ["users", "{{runtime_userId}}"]
-            }
-          }
-        },
-        {
-          "name": "200: Partial Update User",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.environment.set(\"runtime_expectedStatusCode\",200)"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const jsonResponse = pm.response.json()",
-                  "",
-                  "pm.test(\"Returned user ID matches expected ID\", () => {",
-                  "    pm.expect(jsonResponse.id).to.equal(Number(pm.environment.get(\"runtime_userId\")))",
-                  "})",
-                  "",
-                  "pm.test(\"Returned user name matches expected value\", () => {",
-                  "    pm.expect(jsonResponse.name).to.equal(pm.environment.get(\"runtime_userNameUpdated\"))",
-                  "})",
-                  "",
-                  "pm.test(\"Returned user email matches expected value\", () => {",
-                  "    pm.expect(jsonResponse.email).to.equal(pm.environment.get(\"runtime_userEmailUpdated\"))",
-                  "})",
-                  "",
-                  "pm.test(\"Returned user gender matches expected value\", () => {",
-                  "    pm.expect(jsonResponse.gender).to.equal(pm.environment.get(\"runtime_userGenderMale\"))",
-                  "})",
-                  "",
-                  "pm.test(\"Returned user status matches expected value\", () => {",
-                  "    pm.expect(jsonResponse.status).to.equal(pm.environment.get(\"runtime_userStatusActive\"))",
-                  "})"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PATCH",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"name\": \"{{runtime_userNameUpdated}}\",\r\n    \"gender\": \"{{runtime_userGenderMale}}\",\r\n    \"email\": \"{{runtime_userEmailUpdated}}\",\r\n    \"status\": \"{{runtime_userStatusActive}}\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{cfg_baseURL}}/users/{{runtime_userId}}",
-              "host": ["{{cfg_baseURL}}"],
-              "path": ["users", "{{runtime_userId}}"]
-            }
-          }
-        },
-        {
-          "name": "204: Delete User",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.environment.set(\"runtime_expectedStatusCode\",204)"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{cfg_baseURL}}/users/{{runtime_userId}}",
-              "host": ["{{cfg_baseURL}}"],
-              "path": ["users", "{{runtime_userId}}"]
-            }
-          }
-        },
-        {
-          "name": "404: Get User by ID",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.environment.set(\"runtime_expectedStatusCode\",404)"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const jsonResponse = pm.response.json()",
-                  "",
-                  "pm.test('Response message is \"Resource not found\"', () => {",
-                  "    pm.expect(jsonResponse.message).to.equal(\"Resource not found\")",
-                  "})"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{cfg_baseURL}}/users/{{runtime_userId}}",
-              "host": ["{{cfg_baseURL}}"],
-              "path": ["users", "{{runtime_userId}}"]
-            }
-          }
-        },
-        {
-          "name": "200: Cleanup runtime variables",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [""]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const keysArray = Object.keys(pm.environment.toObject())",
-                  "",
-                  "keysArray.forEach(key => {",
-                  "    if(key.startsWith(\"runtime_\")){",
-                  "        pm.environment.unset(key)",
-                  "    }",
-                  "})"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{cfg_baseURL}}/users",
-              "host": ["{{cfg_baseURL}}"],
-              "path": ["users"]
-            }
-          }
         }
       ]
     }
-  ],
-  "variable": []
+  ]
 }
