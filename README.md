@@ -15,15 +15,21 @@ API automation project for the GoREST public REST API.
 
 ## Test Coverage
 
-The collection validates the complete User CRUD workflow:
+The collection validates the complete User CRUD workflow.
 
+Positive scenarios:
 - Create User
-- Get All Users
 - Get User by ID
 - Update User
 - Partial Update User
 - Delete User
-- Negative Get User by ID (404)
+- Get All Users with pagination and filtering
+
+Negative scenarios:
+- Create User with Existing Email (422)
+- Update User with Invalid Gender (422)
+- Partial Update User without Authorization (401)
+- Get Deleted User by ID (404)
 
 ---
 
@@ -35,12 +41,13 @@ The project validates:
 
 - HTTP status codes
 - Response time
-- Content-Type header
-- JSON schema
+- Content-Type validation
+- JSON Schema validation (AJV)
 - CRUD data consistency
+- Runtime-generated test data
 - Pagination
 - Filtering
-- Negative API responses
+- Negative API scenarios (401, 404, 422)
 
 ---
 
@@ -48,10 +55,12 @@ The project validates:
 
 GitHub Actions automatically:
 
+- Runs on push and pull request events
 - Installs project dependencies
 - Executes the Newman collection
+- Injects the API token securely using GitHub Secrets
 - Generates an HTML report
-- Uploads the HTML report as a workflow artifact
+- Uploads the report as a workflow artifact
 - Publishes the latest report to GitHub Pages
 
 ---
@@ -78,7 +87,7 @@ GitHub Actions automatically:
 npm install
 ```
 ### Run Tests
-
+> **Note:** Before running the collection locally, configure a valid GoREST API token in the `cfg_token` environment variable.
 #### Execute the collection:
 ```
 npm run newman
@@ -96,7 +105,7 @@ npm run clean
 
 ## Environment Management
 
-The project separates configuration and runtime data using environment variables.
+The project separates configuration and runtime data using environment variables. Sensitive values such as API tokens are provided securely through GitHub Secrets during CI execution.
 
 ### Configuration Variables
 - cfg_baseURL
@@ -108,7 +117,7 @@ The project separates configuration and runtime data using environment variables
 
 ### Runtime Variables
 
-Runtime variables are generated automatically during execution to keep test runs independent and avoid hardcoded data.
+Runtime variables are generated automatically during collection execution using Postman local variables (`pm.variables`) to keep test runs isolated and avoid persisting temporary data.
 
 Examples include:
 
@@ -116,8 +125,6 @@ Examples include:
 - runtime_userName
 - runtime_userEmail
 - runtime_expectedStatusCode
-
-All runtime variables are removed automatically after the collection finishes.
 
 ---
 
