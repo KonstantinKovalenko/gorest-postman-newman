@@ -30,19 +30,18 @@ jobs:
         run: npm ci
 
       - name: Run Newman tests
-        run: |
-          newman run collections/goREST.postman_collection.json -e environments/qa.postman_environment.json --env-var "cfg_token=${{ secrets.GOREST_TOKEN }}" -r cli,htmlextra --reporter-htmlextra-export ./reports/index.html
+        run: npm run ci:report
 
       - name: Upload HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: newman-report-${{ github.run_number }}
-          path: reports
+          path: ./reports
 
       - name: Deploy report to GitHub Pages
         if: always() && github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: reports
+          publish_dir: ./reports
